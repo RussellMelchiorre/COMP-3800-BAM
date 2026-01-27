@@ -1,0 +1,3 @@
+python scripts/train_model.py --data-path "D:\Data\spectralwaste-segmentation-data\spectralwaste_segmentation" --model cmx_b0 --input-mode rgb,hyper --target-mode labels_rgb --max-epoch 200 --batch-size 32
+
+@REM python scripts/train_model.py --data-path "D:\Data\spectralwaste-segmentation-data\spectralwaste_segmentation" --resume results\cmx_b0.rgb,hyper.labels_rgb.2e6c.best.pth --model cmx_b0 --input-mode rgb,hyper --target-mode labels_rgb --test-only
