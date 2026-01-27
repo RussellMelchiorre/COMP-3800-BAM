@@ -22,7 +22,7 @@ from datetime import datetime
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
-TOTAL_WORKERS =  6 # Originally 2
+TOTAL_WORKERS =  4 # Originally 2
 MEDIAN_FUNC_BATCH_SIZE = 32 # Originally 8 
 
 class CSVLogger:
