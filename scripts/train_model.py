@@ -178,7 +178,7 @@ def main(args):
 
     # Start logging
     if args.wandb:
-        wandb.init(project=args.wandb, entity='separa', name=args.experiment_name, config=args)
+        wandb.init(project=args.wandb, entity='russellstevenmelchiorre-british-columbia-institute-of-te', name=args.experiment_name, config=args)
 
     # Train
     os.makedirs(args.results_path, exist_ok=True)
