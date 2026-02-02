@@ -206,6 +206,26 @@ def main(args):
                 "val/iou_std": val_iou_std,
                 **val_class_iou
             })
+            model_artifact = wandb.Artifact(
+                name=f'{args.experiment_name}.epoch{epoch}',
+                type="model",
+                metadata={
+                    "model_type": args.model,
+                    "input_mode": args.input_mode,
+                    "target_mode": args.target_mode,
+                    "epoch": epoch,
+                    "train_lr": lr_scheduler.get_last_lr()[0],
+                    "train_loss": train_loss,
+                    "val_loss": float(val_loss),
+                    "val_miou": float(val_miou),
+                    "val/iou_std": val_iou_std,
+                    **val_class_iou
+                }
+            )
+            checkpoint_path = os.path.join(args.results_path, f'{args.experiment_name}.best.pth')
+            model_artifact.add_file(local_path=checkpoint_path)
+            wandb.log_artifact(model_artifact)
+
 
     save_checkpoint(model, optimizer, lr_scheduler, epoch, args, 'last')
 
@@ -215,6 +235,7 @@ def main(args):
     csv_logger.log_test(test_loss, test_miou)
 
     if args.wandb:
+        val_class_iou = {f'val/iou_{train_data.classes_names[i]}': val_class_iou[i] for i in range(train_data.num_classes)}
         test_class_iou = {f'test/best_iou_{train_data.classes_names[i]}': test_class_iou[i] for i in range(train_data.num_classes)}
         wandb.log({
             "test/best_loss": test_loss,
@@ -222,6 +243,29 @@ def main(args):
             "test/best_iou_std": test_iou_std,
             **test_class_iou
         })
+        model_artifact = wandb.Artifact(
+            name=f'test.{args.experiment_name}.epoch{epoch}',
+            type="model",
+            metadata={
+                "model_type": args.model,
+                "input_mode": args.input_mode,
+                "target_mode": args.target_mode,
+                "epoch": epoch,
+                "train_lr": lr_scheduler.get_last_lr()[0],
+                "train_loss": train_loss,
+                "val_loss": float(val_loss),
+                "val_miou": float(val_miou),
+                "val/iou_std": val_iou_std,
+                **val_class_iou,
+                "test/best_loss": test_loss,
+                "test/best_miou": test_miou,
+                "test/best_iou_std": test_iou_std,
+                **test_class_iou
+            }
+        )
+        checkpoint_path = os.path.join(args.results_path, f'{args.experiment_name}.best.pth')
+        model_artifact.add_file(local_path=checkpoint_path)
+        wandb.log_artifact(model_artifact)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
