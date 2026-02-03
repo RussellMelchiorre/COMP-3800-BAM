@@ -32,7 +32,7 @@ def save_checkpoint(model, optimizer, lr_scheduler, epoch, args, suffix):
 
 def median_frequency_exp(dataset: Dataset, num_classes: int, soft: float):
     # Process the dataset in parallel
-    loader = DataLoader(dataset, batch_size=64, num_workers=8, shuffle=False)
+    loader = DataLoader(dataset, batch_size=8, num_workers=0, shuffle=False)
 
     # Initialize counts
     classes_freqs = torch.zeros(num_classes, dtype=torch.int64)
@@ -109,9 +109,9 @@ def main(args):
     val_data = SpectralWasteSegmentation(args.data_path, split='val', input_mode=args.input_mode, target_mode=args.target_mode, transforms=SemanticSegmentationTest(), target_type='')
     test_data = SpectralWasteSegmentation(args.data_path, split='test', input_mode=args.input_mode, target_mode=args.target_mode, transforms=SemanticSegmentationTest(), target_type='')
 
-    train_dataloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=30)
-    val_dataloader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False, num_workers=30)
-    test_dataloader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False, num_workers=30)
+    train_dataloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    val_dataloader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    test_dataloader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False, num_workers=0)
 
     model = models.create_model(args.model, train_data.num_channels, train_data.num_classes).to(args.device)
     optimizer, lr_scheduler = models.create_optimizers(args.model, model, args.max_epoch)
