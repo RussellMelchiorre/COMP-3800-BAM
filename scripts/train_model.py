@@ -2,12 +2,12 @@ import argparse
 import os
 import uuid
 
+# importing Wandb
+import wandb
+
 import torch
 import torchmetrics
-
 from torch.utils.data import Dataset, DataLoader
-
-import wandb
 
 from spectralwaste_segmentation.datasets import (
     SpectralWasteSegmentation,
@@ -30,11 +30,9 @@ def save_checkpoint(model, optimizer, lr_scheduler, epoch, args, suffix):
     }
     torch.save(checkpoint, os.path.join(args.results_path, f'{args.experiment_name}.{suffix}.pth'))
 
-def median_frequency_exp(dataset: Dataset, num_classes: int, soft: float):
-    # Process the dataset in parallel
-    loader = DataLoader(dataset, batch_size=8, num_workers=0, shuffle=False)
 
-    # Initialize counts
+def median_frequency_exp(dataset: Dataset, num_classes: int, soft: float):
+    loader = DataLoader(dataset, batch_size=8, num_workers=0, shuffle=False)
     classes_freqs = torch.zeros(num_classes, dtype=torch.int64)
 
     for _, target in loader:
@@ -47,8 +45,9 @@ def median_frequency_exp(dataset: Dataset, num_classes: int, soft: float):
         print("There are some classes not present in the training samples")
 
     result = classes_freqs.median() / classes_freqs
-    result[zeros] = 0  # avoid inf values
+    result[zeros] = 0
     return result ** soft
+
 
 def train_epoch(model, dataloader, criterion, optimizer, lr_scheduler, device):
     model.train()
@@ -72,6 +71,7 @@ def train_epoch(model, dataloader, criterion, optimizer, lr_scheduler, device):
 
     lr_scheduler.step()
     return mean_loss.compute()
+
 
 def evaluate(model, dataloader, criterion, num_classes, device):
     model.eval()
@@ -97,12 +97,12 @@ def evaluate(model, dataloader, criterion, num_classes, device):
     iou_std = class_iou[1:].std()
     return mean_loss, class_iou, miou, iou_std
 
+
 def main(args):
     args.experiment_name = f'{args.model}.{args.input_mode}.{args.target_mode}.{str(uuid.uuid4())[:4]}'
     print(args.experiment_name)
 
     if ',' in args.input_mode:
-        # Use multimodal dataset
         args.input_mode = args.input_mode.split(',')
 
     train_data = SpectralWasteSegmentation(args.data_path, split='train', input_mode=args.input_mode, target_mode=args.target_mode, transforms=SemanticSegmentationTrain(), target_type='')
@@ -116,7 +116,6 @@ def main(args):
     model = models.create_model(args.model, train_data.num_channels, train_data.num_classes).to(args.device)
     optimizer, lr_scheduler = models.create_optimizers(args.model, model, args.max_epoch)
 
-    # Calculate loss weights and define loss
     loss_weights = median_frequency_exp(train_data, train_data.num_classes, 0.12)
     criterion = torch.nn.CrossEntropyLoss(loss_weights.to(args.device))
 
@@ -129,16 +128,20 @@ def main(args):
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
 
     if args.test_only:
-        # Evaluate model
         test_loss, test_class_iou, test_miou, test_iou_std = evaluate(model, test_dataloader, criterion, train_data.num_classes, args.device)
         print(f'test/loss: {test_loss} | test/class_iou: {test_class_iou.tolist()} | test/miou: {test_miou}, test/iou_std: {test_iou_std}')
         return
 
-    # Start logging
+    # ------------------ W&B Integration ------------------
     if args.wandb:
-        wandb.init(project=args.wandb, entity='separa', name=args.experiment_name, config=args)
+        wandb.init(
+            project=args.wandb,
+            entity='russellstevenmelchiorre-british-columbia-institute-of-te',  # the team
+            name=args.experiment_name,
+            config=vars(args)
+        )
+    # ------------------------------------------------------
 
-    # Train
     os.makedirs(args.results_path, exist_ok=True)
     best_val_miou = 0
 
@@ -165,7 +168,6 @@ def main(args):
 
     save_checkpoint(model, optimizer, lr_scheduler, epoch, args, 'last')
 
-    # Evaluate the best model
     test_loss, test_class_iou, test_miou, test_iou_std = evaluate(best_model, test_dataloader, criterion, train_data.num_classes, args.device)
     print(f'test/loss: {test_loss} | test/miou: {test_miou}')
 
@@ -177,6 +179,8 @@ def main(args):
             "test/best_iou_std": test_iou_std,
             **test_class_iou
         })
+        wandb.finish()  # finish the run
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -195,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument('--max-epoch', type=int, default=200)
     parser.add_argument('--resume', type=str, default='', help='Path of a checkpoint')
     parser.add_argument('--test-only', action='store_true')
-    parser.add_argument('--wandb', type=str, default='', help='W&B project name')
+    parser.add_argument('--wandb', type=str, default='spectralwaste-segmentation', help='W&B project name')
 
     args = parser.parse_args()
     main(args)
