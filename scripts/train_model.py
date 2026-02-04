@@ -23,7 +23,7 @@ torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
 TOTAL_WORKERS =  4 # Originally 2
-MEDIAN_FUNC_BATCH_SIZE = 32 # Originally 8 
+MEDIAN_FUNC_BATCH_SIZE = 2 # Originally 8 
 
 class CSVLogger:
     def __init__(self, results_path, experiment_name):
@@ -216,7 +216,6 @@ def main(args):
     csv_logger.log_test(test_loss, test_miou)
 
     if args.wandb:
-        val_class_iou = {f'val/iou_{train_data.classes_names[i]}': val_class_iou[i] for i in range(train_data.num_classes)}
         test_class_iou = {f'test/best_iou_{train_data.classes_names[i]}': test_class_iou[i] for i in range(train_data.num_classes)}
         wandb.log({
             "test/best_loss": test_loss,
