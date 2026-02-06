@@ -16,46 +16,8 @@ from spectralwaste_segmentation.datasets import (
 )
 from spectralwaste_segmentation import models
 
-import csv
-from datetime import datetime
-
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
-
-class CSVLogger:
-    def __init__(self, results_path, experiment_name):
-        self.results_path = results_path
-        self.experiment_name = experiment_name
-        self.csv_file = os.path.join(results_path, f'{experiment_name}.csv')
-        self._write_header = True
-        
-    def log_epoch(self, epoch, train_loss, val_loss, val_miou):
-        data = {
-            'timestamp': datetime.now().isoformat(),
-            'epoch': epoch,
-            'train_loss': float(train_loss),
-            'val_loss': float(val_loss),
-            'val_miou': float(val_miou)
-        }
-        
-        with open(self.csv_file, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=data.keys())
-            if self._write_header:
-                writer.writeheader()
-                self._write_header = False
-            writer.writerow(data)
-    
-    def log_test(self, test_loss, test_miou):
-        data = {
-            'timestamp': datetime.now().isoformat(),
-            'test_loss': float(test_loss),
-            'test_miou': float(test_miou)
-        }
-        
-        with open(self.csv_file, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=data.keys())
-            writer.writerow(data)
-
 
 def save_checkpoint(model, optimizer, lr_scheduler, epoch, args, suffix):
     checkpoint = {
@@ -138,8 +100,6 @@ def main(args):
     args.experiment_name = f'{args.model}.{args.input_mode}.{args.target_mode}.{str(uuid.uuid4())[:4]}'
     print(args.experiment_name)
 
-    csv_logger = CSVLogger(args.results_path, args.experiment_name)
-
     if ',' in args.input_mode:
         # Use multimodal dataset
         args.input_mode = args.input_mode.split(',')
@@ -191,7 +151,6 @@ def main(args):
             best_val_miou = val_miou
 
         print(f'epoch: {epoch:04d} | train/loss: {train_loss:.4f} | val/loss: {val_loss:.4f} | val/miou: {val_miou:.4f}')
-        csv_logger.log_epoch(epoch, train_loss, val_loss, val_miou)
 
         if args.wandb:
             val_class_iou = {f'val/iou_{train_data.classes_names[i]}': val_class_iou[i] for i in range(train_data.num_classes)}
@@ -210,7 +169,6 @@ def main(args):
     # Evaluate the best model
     test_loss, test_class_iou, test_miou, test_iou_std = evaluate(best_model, test_dataloader, criterion, train_data.num_classes, args.device)
     print(f'test/loss: {test_loss} | test/miou: {test_miou}')
-    csv_logger.log_test(test_loss, test_miou)
 
     if args.wandb:
         test_class_iou = {f'test/best_iou_{train_data.classes_names[i]}': test_class_iou[i] for i in range(train_data.num_classes)}
