@@ -17,6 +17,8 @@ setuptools.setup(
         'torch',
         'torchvision',
         'torchmetrics',
-        'wandb'
+        'wandb',
+        'tqdm',
+        'jupyter'
     ],
 )
