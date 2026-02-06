@@ -198,9 +198,9 @@ if __name__ == "__main__":
     parser.add_argument('--resume', type=str, default='', help='Path of a checkpoint')
     parser.add_argument('--test-only', action='store_true')
     parser.add_argument('--wandb', type=str, default='', help='W&B project name')
-    parser.add_argument('--train-data-shuffle', type=bool, default=True, help='Shuffle training data at every epoch')
-    parser.add_argument('--val-data-shuffle', type=bool, default=True, help='Shuffle validation data at every epoch')
-    parser.add_argument('--test-data-shuffle', type=bool, default=True, help='Shuffle testing data at every epoch')
+    parser.add_argument('--train-data-no-shuffle', dest='train_data_shuffle', action='store_false', help='No shuffle for training data at every epoch')
+    parser.add_argument('--val-data-no-shuffle', dest='val_data_shuffle',  action='store_false', help='No shuffle for validation data at every epoch')
+    parser.add_argument('--test-data-no-shuffle', dest='test_data_shuffle',  action='store_false', help='No shuffle for testing data at every epoch')
 
     args = parser.parse_args()
     main(args)
