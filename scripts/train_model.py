@@ -22,9 +22,6 @@ from datetime import datetime
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
-TOTAL_WORKERS =  4 # Originally 2
-MEDIAN_FUNC_BATCH_SIZE = 2 # Originally 8 
-
 class CSVLogger:
     def __init__(self, results_path, experiment_name):
         self.results_path = results_path
@@ -72,7 +69,7 @@ def save_checkpoint(model, optimizer, lr_scheduler, epoch, args, suffix):
 
 def median_frequency_exp(dataset: Dataset, num_classes: int, soft: float):
     # Process the dataset in parallel
-    loader = DataLoader(dataset, batch_size=MEDIAN_FUNC_BATCH_SIZE, num_workers=TOTAL_WORKERS, shuffle=False)
+    loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=args.train_data_shuffle)
 
     # Initialize counts
     classes_freqs = torch.zeros(num_classes, dtype=torch.int64)
@@ -151,9 +148,9 @@ def main(args):
     val_data = SpectralWasteSegmentation(args.data_path, split='val', input_mode=args.input_mode, target_mode=args.target_mode, transforms=SemanticSegmentationTest(), target_type='')
     test_data = SpectralWasteSegmentation(args.data_path, split='test', input_mode=args.input_mode, target_mode=args.target_mode, transforms=SemanticSegmentationTest(), target_type='')
 
-    train_dataloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, num_workers=TOTAL_WORKERS)
-    val_dataloader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False, num_workers=TOTAL_WORKERS)
-    test_dataloader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False, num_workers=TOTAL_WORKERS)
+    train_dataloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=args.train_data_shuffle, num_workers=args.num_workers)
+    val_dataloader = DataLoader(val_data, batch_size=args.batch_size, shuffle=args.val_data_shuffle, num_workers=args.num_workers)
+    test_dataloader = DataLoader(test_data, batch_size=args.batch_size, shuffle=args.test_data_shuffle, num_workers=args.num_workers)
 
     model = models.create_model(args.model, train_data.num_channels, train_data.num_classes).to(args.device)
     optimizer, lr_scheduler = models.create_optimizers(args.model, model, args.max_epoch)
@@ -237,11 +234,15 @@ if __name__ == "__main__":
     parser.add_argument('--target-mode', type=str, default='labels_rgb')
     # training
     parser.add_argument('--batch-size', type=int, default=8)
+    parser.add_argument('--num-workers', type=int, default=2)
     parser.add_argument('--start-epoch', type=int, default=0)
     parser.add_argument('--max-epoch', type=int, default=1)
     parser.add_argument('--resume', type=str, default='', help='Path of a checkpoint')
     parser.add_argument('--test-only', action='store_true')
     parser.add_argument('--wandb', type=str, default='', help='W&B project name')
+    parser.add_argument('--train-data-shuffle', type=bool, default=True, help='Shuffle training data at every epoch')
+    parser.add_argument('--val-data-shuffle', type=bool, default=True, help='Shuffle validation data at every epoch')
+    parser.add_argument('--test-data-shuffle', type=bool, default=True, help='Shuffle testing data at every epoch')
 
     args = parser.parse_args()
     main(args)
