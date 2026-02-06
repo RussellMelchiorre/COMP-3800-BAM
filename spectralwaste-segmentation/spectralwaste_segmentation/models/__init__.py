@@ -51,7 +51,7 @@ class CMX(torch.nn.Module):
         return self.model(input1, input2)
 
 
-def create_model(name, in_channels, num_classes):
+def create_model(name, in_channels, num_classes) -> torch.nn.Module:
     if name == 'mininet':
         model = MiniNet(in_channels, num_classes)
     elif name == 'mininet_multimodal':
@@ -67,7 +67,7 @@ def create_model(name, in_channels, num_classes):
     return model
 
 
-def create_optimizers(name, model, max_epochs):
+def create_optimizers(name, model, max_epochs) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler]:
     if name == 'mininet':
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
         lr_scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer, max_epochs, 0.9)
