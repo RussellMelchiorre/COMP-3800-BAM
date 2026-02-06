@@ -57,6 +57,8 @@ class SpectralWasteSegmentation(torchvision.datasets.VisionDataset):
     def __init__(
         self,
         root: str,
+        random_seed: int,
+        deterministic: bool = False,
         split: str = 'train',
         input_mode: Union[str, list[str]] = ['rgb', 'hyper'],
         target_mode: str = 'labels_rgb',
@@ -73,6 +75,15 @@ class SpectralWasteSegmentation(torchvision.datasets.VisionDataset):
         self.target_mode = target_mode
         self.target_type = target_type
 
+        torch.manual_seed(random_seed)
+        torch.cuda.manual_seed(random_seed)
+        torch.cuda.manual_seed_all(random_seed)
+        torch.mps.manual_seed(random_seed)
+        np.random.seed(random_seed)
+        torch.use_deterministic_algorithms(deterministic)
+        torch.backends.cudnn.deterministic = deterministic
+        torch.backends.cudnn.benchmark = not deterministic
+
         if not isinstance(input_mode, list):
             self.input_mode = [input_mode]
 
@@ -81,12 +92,24 @@ class SpectralWasteSegmentation(torchvision.datasets.VisionDataset):
         self.num_classes = len(self.classes_names)
 
         self.input_dirs = [Path(root, mode, split) for mode in self.input_mode]
-        self.target_dir = Path(root, self.target_mode, split)
+        self.target_dir = Path(root, self.target_mode, self.target_type, split)
 
         self.input_paths = [list(sorted(dir.iterdir())) for dir in self.input_dirs]
-        self.target_paths = list(sorted(self.target_dir.glob(f'*{target_type}.png')))
+        self.target_paths = list(sorted(self.target_dir.glob('*.png')))
+
+        #print("self.input_paths = ", self.input_paths)
 
         sample = self[0]
+
+        # print("sample type = ", type(sample))
+        # print("sample.__class__.__qualname__ = ", sample.__class__.__qualname__)
+        # print("sample = ", sample)
+
+        # print("sample[0] type = ", type(sample[0]))
+        # print("sample[0].__class__.__qualname__ = ", sample.__class__.__qualname__)
+        # print("sample[0] = ", sample[0])
+        # print("isinstance(sample[0], list) = ", isinstance(sample[0], list))
+        
         if isinstance(sample[0], list):
             self.num_channels = [input.shape[0] for input in sample[0]]
         else:
@@ -141,6 +164,10 @@ class SpectralWasteSegmentation(torchvision.datasets.VisionDataset):
 
         if len(inputs) == 1:
             inputs = inputs[0]
+
+        #print("inputs type = ", type(inputs))
+        #print("inputs.__class__.__qualname__ = ", inputs.__class__.__qualname__)
+        #print("inputs = ", inputs)
 
         return inputs, target
 
