@@ -231,7 +231,7 @@ def main(args):
             }, step=epoch)
             # wandb_artifact = wandb.Artifact(name=f'{experiment_name}-{experiment_timestamp}-results', type='model')
             # wandb_artifact.add_file(local_path=os.path.join(results_folder, f'{experiment_name}.epoch-{epoch:04d}.pth'))
-            # wandb_run.upsert_artifact(wandb_artifact, distributed_id=f'epoch-{epoch:04d}')
+            # wandb_run.log_artifact(wandb_artifact)
             
 
         if val_miou > best_val_miou:
@@ -266,7 +266,7 @@ def main(args):
                 }, step=epoch)
                 wandb_artifact = wandb.Artifact(name=f'{experiment_name}-{experiment_timestamp}-results', type='model')
                 wandb_artifact.add_file(local_path=os.path.join(results_folder, f'{experiment_name}.best.pth'))
-                wandb_run.upsert_artifact(wandb_artifact, distributed_id=f'epoch-{epoch:04d}')
+                wandb_run.log_artifact(wandb_artifact)
 
         # if args.wandb_enable and wandb_run is not None:
         #     wandb_artifact = wandb.Artifact(name=f'{experiment_name}-{experiment_timestamp}-results', type='model')
